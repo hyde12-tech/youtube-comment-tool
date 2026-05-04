@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 import gspread
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -9,6 +9,9 @@ SCOPES = [
     'https://www.googleapis.com/auth/drive',
 ]
 MAX_SHEET_NAME_LEN = 100
+_BASE_DIR = Path(__file__).parent
+TOKEN_PATH = _BASE_DIR / 'token.json'
+CREDS_PATH = _BASE_DIR / 'credentials.json'
 
 
 def get_unique_sheet_name(existing_names: list[str], desired_name: str) -> str:
@@ -26,16 +29,15 @@ def get_unique_sheet_name(existing_names: list[str], desired_name: str) -> str:
 
 def get_google_creds() -> Credentials:
     creds = None
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    if TOKEN_PATH.exists():
+        creds = Credentials.from_authorized_user_file(str(TOKEN_PATH), SCOPES)
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file(str(CREDS_PATH), SCOPES)
             creds = flow.run_local_server(port=0)
-        with open('token.json', 'w', encoding='utf-8') as token_file:
-            token_file.write(creds.to_json())
+        TOKEN_PATH.write_text(creds.to_json(), encoding='utf-8')
     return creds
 
 
@@ -45,7 +47,7 @@ def write_comments_to_sheet(
     video_title: str,
     comments: list[dict],
 ) -> str:
-    gc = gspread.authorize(creds)
+    gc = gspread.Client(auth=creds)
 
     if spreadsheet_url:
         spreadsheet = gc.open_by_url(spreadsheet_url)
@@ -63,6 +65,6 @@ def write_comments_to_sheet(
 
     header = [['コメント本文', '投稿者名', '投稿日時', 'いいね数']]
     rows = [[c['text'], c['author'], c['published_at'], c['like_count']] for c in comments]
-    worksheet.update('A1', header + rows)
+    worksheet.update(header + rows, 'A1')
 
     return spreadsheet.url
