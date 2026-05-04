@@ -139,4 +139,6 @@ def test_fetch_all_comments_handles_pagination():
 
     assert len(result) == 2
     assert result[0]['text'] == 'コメント1'
+    assert result[0]['published_at'] == '2024-01-15 12:34:56'
     assert result[1]['text'] == 'コメント2'
+    assert result[1]['published_at'] == '2024-01-16 12:34:56'
