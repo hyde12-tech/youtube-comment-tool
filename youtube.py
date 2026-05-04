@@ -44,7 +44,8 @@ def fetch_all_comments(api_key: str, video_id: str) -> list[dict]:
                 textFormat='plainText',
             ).execute()
 
-            for item in response['items']:
+            items = response.get('items', [])
+            for item in items:
                 snippet = item['snippet']['topLevelComment']['snippet']
                 comments.append({
                     'text': snippet['textDisplay'],
@@ -53,7 +54,7 @@ def fetch_all_comments(api_key: str, video_id: str) -> list[dict]:
                     'like_count': snippet['likeCount'],
                 })
 
-            pbar.update(len(response['items']))
+            pbar.update(len(items))
             next_page_token = response.get('nextPageToken')
             if not next_page_token:
                 break
