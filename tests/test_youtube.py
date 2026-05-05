@@ -142,3 +142,31 @@ def test_fetch_all_comments_handles_pagination():
     assert result[0]['published_at'] == '2024-01-15 12:34:56'
     assert result[1]['text'] == 'コメント2'
     assert result[1]['published_at'] == '2024-01-16 12:34:56'
+
+
+def test_fetch_all_comments_calls_on_progress_with_running_total():
+    mock_response = {
+        'items': [
+            {
+                'snippet': {
+                    'topLevelComment': {
+                        'snippet': {
+                            'textDisplay': 'コメント',
+                            'authorDisplayName': 'ユーザー',
+                            'publishedAt': '2024-01-15T03:34:56.000Z',
+                            'likeCount': 1,
+                        }
+                    }
+                }
+            }
+        ]
+    }
+    progress_calls = []
+    with patch('youtube.build') as mock_build:
+        mock_youtube = MagicMock()
+        mock_build.return_value = mock_youtube
+        mock_youtube.commentThreads.return_value.list.return_value.execute.return_value = mock_response
+
+        fetch_all_comments('fake_key', 'dQw4w9WgXcQ', on_progress=lambda n: progress_calls.append(n))
+
+    assert progress_calls == [1]

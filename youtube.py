@@ -1,8 +1,14 @@
 from urllib.parse import urlparse, parse_qs
+from typing import Callable
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from tqdm import tqdm
 from utils import utc_to_jst
+
+
+class _NullContext:
+    def __enter__(self): return self
+    def __exit__(self, *_): pass
 
 
 def extract_video_id(url: str) -> str | None:
@@ -29,12 +35,17 @@ def fetch_video_title(api_key: str, video_id: str) -> str:
     return items[0]['snippet']['title']
 
 
-def fetch_all_comments(api_key: str, video_id: str) -> list[dict]:
+def fetch_all_comments(
+    api_key: str,
+    video_id: str,
+    on_progress: Callable[[int], None] | None = None,
+) -> list[dict]:
     youtube = build('youtube', 'v3', developerKey=api_key)
     comments = []
     next_page_token = None
+    use_tqdm = on_progress is None
 
-    with tqdm(desc='コメントを取得中', unit='件') as pbar:
+    with (tqdm(desc='コメントを取得中', unit='件') if use_tqdm else _NullContext()) as pbar:
         while True:
             response = youtube.commentThreads().list(
                 part='snippet',
@@ -54,7 +65,11 @@ def fetch_all_comments(api_key: str, video_id: str) -> list[dict]:
                     'like_count': snippet['likeCount'],
                 })
 
-            pbar.update(len(items))
+            if use_tqdm:
+                pbar.update(len(items))
+            elif on_progress is not None:
+                on_progress(len(comments))
+
             next_page_token = response.get('nextPageToken')
             if not next_page_token:
                 break
