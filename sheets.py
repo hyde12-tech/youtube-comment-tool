@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 import gspread
 from google.oauth2.credentials import Credentials
@@ -9,7 +10,15 @@ SCOPES = [
     'https://www.googleapis.com/auth/drive',
 ]
 MAX_SHEET_NAME_LEN = 100
-_BASE_DIR = Path(__file__).parent
+
+
+def _get_base_dir() -> Path:
+    if getattr(sys, 'frozen', False):
+        return Path(sys.executable).parent
+    return Path(__file__).parent
+
+
+_BASE_DIR = _get_base_dir()
 TOKEN_PATH = _BASE_DIR / 'token.json'
 CREDS_PATH = _BASE_DIR / 'credentials.json'
 

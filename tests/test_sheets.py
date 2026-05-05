@@ -112,3 +112,23 @@ def test_write_data_includes_header_and_comments():
     written_data = call_args[0][0]
     assert written_data[0] == ['コメント本文', '投稿者名', '投稿日時', 'いいね数']
     assert written_data[1] == ['テストコメント', 'テストユーザー', '2024-01-15 12:34:56', 5]
+
+
+import sys
+from pathlib import Path
+from unittest.mock import patch
+
+
+def test_get_base_dir_when_not_frozen():
+    import sheets as sheets_module
+    from sheets import _get_base_dir
+    assert _get_base_dir() == Path(sheets_module.__file__).parent
+
+
+def test_get_base_dir_when_frozen(tmp_path):
+    fake_exe = str(tmp_path / 'youtube_comment_tool.exe')
+    with patch.object(sys, 'frozen', True, create=True), \
+         patch.object(sys, 'executable', fake_exe):
+        from sheets import _get_base_dir
+        result = _get_base_dir()
+    assert result == tmp_path
