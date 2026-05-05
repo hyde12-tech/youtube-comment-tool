@@ -7,7 +7,7 @@ from sheets import get_google_creds, write_comments_to_sheet
 
 
 def handle_youtube_error(error: HttpError) -> None:
-    reason = str(error)
+    reason = error.reason or ''
     if 'quotaExceeded' in reason or 'dailyLimitExceeded' in reason:
         print('エラー: 本日のAPI使用量の上限に達しました。明日再試行してください')
     elif 'commentsDisabled' in reason:
@@ -40,7 +40,7 @@ def main() -> None:
         sys.exit(1)
     print(f'動画タイトル: {title}')
 
-    print('')
+    print()
     try:
         comments = fetch_all_comments(api_key, video_id)
     except HttpError as e:
@@ -48,7 +48,7 @@ def main() -> None:
         sys.exit(1)
 
     if not comments:
-        print('コメントが見つかりませんでした')
+        print('この動画にはコメントがありません（または取得できませんでした）')
         sys.exit(0)
 
     print(f'\n{len(comments)}件のコメントを取得しました')
@@ -58,6 +58,11 @@ def main() -> None:
     print('Googleアカウントの認証を行います...')
     try:
         creds = get_google_creds()
+    except FileNotFoundError:
+        print('エラー: credentials.json が見つかりません')
+        print('Google Cloud Console から OAuth認証情報をダウンロードし、')
+        print('credentials.json という名前でこのフォルダに置いてください')
+        sys.exit(1)
     except Exception as e:
         print(f'エラー: Google認証に失敗しました: {e}')
         sys.exit(1)
