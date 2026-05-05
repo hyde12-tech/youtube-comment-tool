@@ -3,4 +3,5 @@ google-auth-oauthlib
 gspread
 python-dotenv
 tqdm
+customtkinter
 pytest
